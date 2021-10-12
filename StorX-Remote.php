@@ -184,7 +184,7 @@ class Rx{
 		}
 		
 		if(!empty($password)){
-			$this->password = $password;
+			$this->password = strval($password);
 		}		
 	}
 	
