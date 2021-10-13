@@ -65,7 +65,7 @@ $rx->deleteKey('password');
  * StorX Remote works almost exactly like regular StorX. See the "Functions" section below for additional functions.
  * Unlike regular StorX, a separate request does not need to be made to write changes made to DB files to disk. All changes are automatically written to disk after each key write/modify/delete request.
  * Exceptions are enabled by default, this behaviour can be changed by changing the value of the constant `THROW_EXCEPTIONS` at the beginning of `StorX-Remote.php`.
- * If you'd like to connect to an API over SSL, you might have to specify a PEM file for cURL. To do so, modify the constant `CURL_PEM_FILE` at the beginning of `StorX-Remote.php`.
+ * If you'd like to connect to an API over TLS, you might have to specify a PEM file for cURL. To do so, modify the constant `CURL_PEM_FILE` at the beginning of `StorX-Remote.php`.
 * cURL is configured to wait for 120 seconds for a response from the API before timing out. You can change this value if required, modify `CURLOPT_TIMEOUT` in `sendRequest()`. 
 
 ## Functions
