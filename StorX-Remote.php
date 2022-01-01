@@ -3,11 +3,12 @@
 StorX API Remote
 by @aaviator42
 
-Remote version: 3.5
-StorX.php version: 3.5
-StorX DB file format version: 3.0
+API Remote version: 3.6
+StorX.php version: 3.6
 
-2021-10-11
+StorX DB file format version: 3.1
+
+2021-12-31
 
 */
 
@@ -42,11 +43,12 @@ class Rx{
 		$options = array(
 			CURLOPT_CUSTOMREQUEST => $method,
 			CURLOPT_URL => $URL,
-			CURLOPT_USERAGENT => "StorX Remote v1.1",
+			CURLOPT_USERAGENT => "StorX Remote v3.6",
 			CURLOPT_TIMEOUT => 120,
 			CURLOPT_RETURNTRANSFER => true);
 		
 		if(!empty($payload)){
+			$payload["version"] = "3.6";
 			$payload  = json_encode($payload);
 			$headers = array(
 				'Content-Type: application/json',
@@ -150,7 +152,7 @@ class Rx{
 		}
 		
 		$testURL = $URL . "/ping";
-		$payload = array("version" => "3.5");
+		$payload = array("version" => "3.6");
 		$response = $this->sendRequest("GET", $testURL, NULL, $payload);
 		
 		if($response === false){
@@ -261,7 +263,7 @@ class Rx{
 				break;
 		}
 			
-		$keyValue = unserialize(base64_decode($response["keyValue"]));
+		$keyValue = unserialize($response["keyValue"]);
 		$store = $keyValue;
 		return 1;		
 	}	
@@ -650,7 +652,4 @@ class Rx{
 		}
 	}
 	
-
-	
 }
-	
