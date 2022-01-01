@@ -1,7 +1,7 @@
 # StorX-Remote
 A library to interface with the [StorX API](https://github.com/aaviator42/StorX-API)
 
-Current library version: `3.5` | `2020-10-11`  
+Current library version: `3.6` | `2021-12-31`  
 
 License: `AGPLv3`
 
@@ -107,4 +107,4 @@ Sets the password to be used while communicating with the API. The password shou
 
 
 -----
-Documentation updated `2020-10-11`
+Documentation updated `2021-12-31`
