@@ -1,7 +1,7 @@
 # StorX-Remote
 A library to interface with the [StorX API](https://github.com/aaviator42/StorX-API)
 
-Current library version: `3.6` | `2021-12-31`  
+Current library version: `3.7` | `2022-01-18`  
 
 License: `AGPLv3`
 
@@ -72,13 +72,13 @@ $rx->deleteKey('password');
 
 * In StorX Remote, the class is called `Rx`, and not `Sx`.
 * Unlike in regular StorX, `createFile()`, `checkFile()` and `deleteFile()` are also member functions of this class, and an object must be created in order to use them. Other than that, their functionality remains identical.
-* `readKey()`, `returnKey()`, `writeKey()`, `modifyKey()`, `checkKey()` and `returnKey()` have the exact same behaviour as with regular StorX.
+* `readKey()`, `readAllKeys()`, `returnKey()`, `writeKey()`, `modifyKey()`, `checkKey()` and `returnKey()` have the exact same behaviour as with regular StorX.
 * `commitFile()` and `closeFile()` don't really do anything, because as noted above, when dealing with DB files over the API, all changes are automatically written to disk after each key write/modify/delete request.
 * Before using any of these functions, you need to use `setURL()` and (optionally) `setPassword()`. See below.
 
 #### 1. `\StorX\Remote\Rx::setURL(<URL>)`
 
-Sets the URL to the API to be used by the `Rx` object.
+Sets the URL of the StorX API to be used by the `Rx` object.
 
 ```php
 
@@ -107,4 +107,4 @@ Sets the password to be used while communicating with the API. The password shou
 
 
 -----
-Documentation updated `2021-12-31`
+Documentation updated `2022-01-18`
