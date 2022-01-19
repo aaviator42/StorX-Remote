@@ -3,12 +3,12 @@
 StorX API Remote
 by @aaviator42
 
-API Remote version: 3.6
-StorX.php version: 3.6
+API Remote version: 3.7
+StorX.php version: 3.7
 
 StorX DB file format version: 3.1
 
-2021-12-31
+2022-01-18
 
 */
 
@@ -43,12 +43,12 @@ class Rx{
 		$options = array(
 			CURLOPT_CUSTOMREQUEST => $method,
 			CURLOPT_URL => $URL,
-			CURLOPT_USERAGENT => "StorX Remote v3.6",
+			CURLOPT_USERAGENT => "StorX Remote v3.7",
 			CURLOPT_TIMEOUT => 120,
 			CURLOPT_RETURNTRANSFER => true);
 		
 		if(!empty($payload)){
-			$payload["version"] = "3.6";
+			$payload["version"] = "3.7";
 			$payload  = json_encode($payload);
 			$headers = array(
 				'Content-Type: application/json',
@@ -152,7 +152,7 @@ class Rx{
 		}
 		
 		$testURL = $URL . "/ping";
-		$payload = array("version" => "3.6");
+		$payload = array("version" => "3.7");
 		$response = $this->sendRequest("GET", $testURL, NULL, $payload);
 		
 		if($response === false){
@@ -265,6 +265,47 @@ class Rx{
 			
 		$keyValue = unserialize($response["keyValue"]);
 		$store = $keyValue;
+		return 1;		
+	}	
+
+	public function readAllKeys(&$store){
+		if($this->initChecks() !== 1){
+			return 0;
+		}
+		
+		$URL = $this->URL . "/readAllKeys";
+		$payload = array(
+			"filename" => $this->DBfile,
+			);
+		if(!empty($this->password)){
+			$payload["password"] = $this->password;
+		}
+			
+		$response = $this->sendRequest("GET", $URL, NULL, $payload);
+			
+		if($response === false){
+			if(THROW_EXCEPTIONS){
+				throw new Exception("[StorX Remote: readAllKeys()] Unable to connect to StorX Receiver.");
+			} else {
+				return 0;
+			}
+		}
+		
+		if($this->serverErrorCheck($response["returnCode"]) === 0){
+			return 0;
+		}
+		
+		switch($response["returnCode"]){
+			case 0:
+				if(THROW_EXCEPTIONS){
+					throw new Exception("[StorX Remote: readAllKeys() - Server Error] Unable to read keys.");
+				} else {
+					return 0;
+				}
+				break;
+		}
+			
+		$store = unserialize($response["keyArray"]);
 		return 1;		
 	}	
 	
@@ -652,4 +693,7 @@ class Rx{
 		}
 	}
 	
+
+	
 }
+	
