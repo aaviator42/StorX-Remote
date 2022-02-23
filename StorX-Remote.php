@@ -3,19 +3,19 @@
 StorX API Remote
 by @aaviator42
 
-API Remote version: 3.7
-StorX.php version: 3.7
+StorX API Remote version: 4.1
+StorX.php version: 4.1
 
-StorX DB file format version: 3.1
+StorX file format version: 3.1
 
-2022-01-18
+2022-02-22
 
 */
 
 namespace StorX\Remote;
 use Exception;
 
-const THROW_EXCEPTIONS = 1; //0: return error codes, 1: throw exceptions
+const THROW_EXCEPTIONS = TRUE; //false: return error codes, true: throw exceptions
 const CURL_PEM_FILE = NULL; //path to certificate file for SSL requests
 
 class Rx{
@@ -26,10 +26,13 @@ class Rx{
 
 	private $lockMode = 0;
 	
+	private $throwExceptions = THROW_EXCEPTIONS;
+	
 	function sendRequest($method = NULL, $URL = NULL, $params = NULL, $payload = NULL){
 		if(empty($method) || empty($URL)){
-			throw new Exception("StorX Remote: URL not specified");
+			throw new Exception("StorX Remote: URL not specified", 400);
 		}
+		
 		
 		if(!empty($params)){
 			rtrim($params, '?');
@@ -43,12 +46,12 @@ class Rx{
 		$options = array(
 			CURLOPT_CUSTOMREQUEST => $method,
 			CURLOPT_URL => $URL,
-			CURLOPT_USERAGENT => "StorX Remote v3.7",
+			CURLOPT_USERAGENT => "StorX Remote v4.0",
 			CURLOPT_TIMEOUT => 120,
 			CURLOPT_RETURNTRANSFER => true);
 		
 		if(!empty($payload)){
-			$payload["version"] = "3.7";
+			$payload["version"] = "4.0";
 			$payload  = json_encode($payload);
 			$headers = array(
 				'Content-Type: application/json',
@@ -63,6 +66,7 @@ class Rx{
 		
 		curl_setopt_array($ch, $options);
 		$content = curl_exec($ch);	
+
 		if($content === false){
 			return false;
 		} else {
@@ -72,16 +76,16 @@ class Rx{
 	
 	function initChecks($writeCheck = 0){
 		if(!isset($this->URL)){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote] URL not specified.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote] URL not specified.", 400);
 			} else {
 				return 0;  
 			}
 		}
 		
 		if(!isset($this->DBfile)){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote] No DB file open.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote] No file open.", 102);
 			} else {
 				return 0;  
 			}
@@ -90,43 +94,42 @@ class Rx{
 		
 		if($writeCheck){
 			if($this->lockMode === 0){
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote] DB file not opened for writing.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote] file was not opened for writing.", 103);
 				} else {
 					return 0;  
 				}
 			}
 		}
-		
 		return 1;
 	}
 	
 	function serverErrorCheck($code){
 		switch($code){
 			case -2:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: Server Error] Unable to open DB file.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: Server Error] Unable to open file.", 108);
 				} else {
 					return 0;
 				}
 				break;
 			case -3:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: Server Error] Unable to commit changes to DB file.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: Server Error] Unable to commit changes to file.", 109);
 				} else {
 					return 0;
 				}
 				break;
 			case -666:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: Server Error] Invalid request, you broke something.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: Server Error] Invalid request, you broke something.", 666);
 				} else {
 					return 0;
 				}
 				break;
 			case -777:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: Server Error] Authentication failed.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: Server Error] Authentication failed.", 401);
 				} else {
 					return 0;
 				}
@@ -137,39 +140,45 @@ class Rx{
 	}
 	
 	function doofusError(){
-		throw new Exception("Ya broke something, doofus.");
+		throw new Exception("Ya broke something, doofus.", 666);
+	}
+	
+	public function throwExceptions($throwExceptions = NULL){
+		if($throwExceptions !== NULL){
+			$this->throwExceptions = (bool)$throwExceptions;
+		}
+		return $this->throwExceptions;
 	}
 	
 	public function setURL($URL){
 		$URL = rtrim($URL, '/\\');
 		
 		if(empty($URL)){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: setURL()] URL does not point to StorX Receiver of matching version.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: setURL()] URL does not point to StorX Receiver of matching version.", 402);
 			} else {
 				return 0;
 			}
 		}
 		
 		$testURL = $URL . "/ping";
-		$payload = array("version" => "3.7");
+		$payload = array("version" => "4.0");
 		$response = $this->sendRequest("GET", $testURL, NULL, $payload);
 		
 		if($response === false){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: setURL()] Unable to connect to StorX Receiver.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: setURL()] Unable to connect to StorX Receiver.", 403);
 			} else {
 				return 0;
 			}
 		}
 		
-		
 		if(isset($response["pong"]) && $response["pong"] === "OK"){
 			$this->URL = $URL;
 			return 1;
 		} else {
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: setURL()] URL does not point to StorX Receiver of matching version.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: setURL()] URL does not point to StorX Receiver of matching version.", 402);
 			} else {
 				return 0;
 			}
@@ -178,8 +187,8 @@ class Rx{
 	
 	public function setPassword($password){
 		if(!isset($this->URL)){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote] URL not specified.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote] URL not specified.", 400);
 			} else {
 				return 0;  
 			}
@@ -192,16 +201,16 @@ class Rx{
 	
 	public function openFile($filename, $mode = 0){
 		if(!isset($this->URL)){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote] URL not specified.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote] URL not specified.", 400);
 			} else {
 				return 0;  
 			}
 		}
 		
 		if(empty($filename)){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: openFile()] No filename specified.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: openFile()] No filename specified.", 102);
 			} else {
 				return 0;
 			}
@@ -242,8 +251,8 @@ class Rx{
 		$response = $this->sendRequest("GET", $URL, NULL, $payload);
 			
 		if($response === false){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: readKey()] Unable to connect to StorX Receiver.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: readKey()] Unable to connect to StorX Receiver.", 403);
 			} else {
 				return 0;
 			}
@@ -255,8 +264,8 @@ class Rx{
 		
 		switch($response["returnCode"]){
 			case 0:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: readKey() - Server Error] Key not found in DB file.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: readKey() - Server Error] Key not found in file.", 201);
 				} else {
 					return 0;
 				}
@@ -284,8 +293,8 @@ class Rx{
 		$response = $this->sendRequest("GET", $URL, NULL, $payload);
 			
 		if($response === false){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: readAllKeys()] Unable to connect to StorX Receiver.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: readAllKeys()] Unable to connect to StorX Receiver.", 403);
 			} else {
 				return 0;
 			}
@@ -297,8 +306,8 @@ class Rx{
 		
 		switch($response["returnCode"]){
 			case 0:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: readAllKeys() - Server Error] Unable to read keys.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: readAllKeys() - Server Error] Unable to read keys.", 203);
 				} else {
 					return 0;
 				}
@@ -326,8 +335,8 @@ class Rx{
 		$response = $this->sendRequest("GET", $URL, NULL, $payload);
 			
 		if($response === false){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: returnKey()] Unable to connect to StorX Receiver.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: returnKey()] Unable to connect to StorX Receiver.", 403);
 			} else {
 				return 0;
 			}
@@ -339,15 +348,15 @@ class Rx{
 		
 		switch($response["returnCode"]){
 			case "STORX_ERROR":
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: returnKey() - Server Error] Key not found in DB file.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: returnKey() - Server Error] Key not found in file.", 201);
 				} else {
 					return "STORX_ERROR";
 				}
 				break;
 		}
 			
-		$keyValue = unserialize(base64_decode($response["keyValue"]));
+		$keyValue = unserialize($response["keyValue"]);
 		return $keyValue;		
 	}
 	
@@ -359,8 +368,9 @@ class Rx{
 		$URL = $this->URL . "/writeKey";
 		$payload = array(
 			"filename" => $this->DBfile,
+			"keyInputSerialization" => "PHP",
 			"keyName" => $keyName,
-			"keyValue" => $keyValue
+			"keyValue" => serialize($keyValue)
 			);
 		if(!empty($this->password)){
 			$payload["password"] = $this->password;
@@ -369,8 +379,8 @@ class Rx{
 		$response = $this->sendRequest("PUT", $URL, NULL, $payload);
 			
 		if($response === false){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: writeKey()] Unable to connect to StorX Receiver.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: writeKey()] Unable to connect to StorX Receiver.", 403);
 			} else {
 				return 0;
 			}
@@ -382,8 +392,8 @@ class Rx{
 		
 		switch($response["returnCode"]){
 			case 0:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: writeKey() - Server Error] Key already exists in DB file or unable to write key to DB file.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: writeKey() - Server Error] Key already exists in file or unable to write key to file.", 204);
 				} else {
 					return 0;
 				}
@@ -403,8 +413,9 @@ class Rx{
 		$URL = $this->URL . "/modifyKey";
 		$payload = array(
 			"filename" => $this->DBfile,
+			"keyInputSerialization" => "PHP",
 			"keyName" => $keyName,
-			"keyValue" => $keyValue
+			"keyValue" => serialize($keyValue)
 			);
 		if(!empty($this->password)){
 			$payload["password"] = $this->password;
@@ -413,8 +424,8 @@ class Rx{
 		$response = $this->sendRequest("PUT", $URL, NULL, $payload);
 			
 		if($response === false){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: modifyKey()] Unable to connect to StorX Receiver.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: modifyKey()] Unable to connect to StorX Receiver.", 403);
 			} else {
 				return 0;
 			}
@@ -426,8 +437,52 @@ class Rx{
 		
 		switch($response["returnCode"]){
 			case 0:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: modifyKey() - Server Error] Unable to modify key in DB file.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: modifyKey() - Server Error] Unable to modify key in file.", 204);
+				} else {
+					return 0;
+				}
+				break;
+			case 1:
+				return 1;
+				break;				
+		}
+		
+	}
+	
+	public function modifyMultipleKeys($keyArray){
+		if($this->initChecks(1) !== 1){
+			return 0;
+		}
+		
+		$URL = $this->URL . "/modifyMultipleKeys";
+		$payload = array(
+			"filename" => $this->DBfile,
+			"keyInputSerialization" => "PHP",
+			"keyArray" => serialize($keyArray),
+			);
+		if(!empty($this->password)){
+			$payload["password"] = $this->password;
+		}
+		
+		$response = $this->sendRequest("PUT", $URL, NULL, $payload);
+			
+		if($response === false){
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: modifyMultipleKeys()] Unable to connect to StorX Receiver.", 403);
+			} else {
+				return 0;
+			}
+		}
+		
+		if($this->serverErrorCheck($response["returnCode"]) === 0){
+			return 0;
+		}
+		
+		switch($response["returnCode"]){
+			case 0:
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: modifyMultipleKeys() - Server Error] Unable to modify key in file.", 204);
 				} else {
 					return 0;
 				}
@@ -456,8 +511,8 @@ class Rx{
 		$response = $this->sendRequest("DELETE", $URL, NULL, $payload);
 			
 		if($response === false){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: deleteKey()] Unable to connect to StorX Receiver.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: deleteKey()] Unable to connect to StorX Receiver.", 403);
 			} else {
 				return 0;
 			}
@@ -469,8 +524,8 @@ class Rx{
 		
 		switch($response["returnCode"]){
 			case 0:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: deleteKey() - Server Error] Unable to delete key from DB file.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: deleteKey() - Server Error] Unable to delete key from file.", 205);
 				} else {
 					return 0;
 				}
@@ -484,8 +539,8 @@ class Rx{
 	
 	public function deleteFile($filename){
 		if(!isset($this->URL)){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote] URL not specified.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote] URL not specified.", 400);
 			} else {
 				return 0;  
 			}
@@ -502,8 +557,8 @@ class Rx{
 		$response = $this->sendRequest("DELETE", $URL, NULL, $payload);
 			
 		if($response === false){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: deleteFile()] Unable to connect to StorX Receiver.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: deleteFile()] Unable to connect to StorX Receiver.", 403);
 			} else {
 				return 0;
 			}
@@ -515,8 +570,8 @@ class Rx{
 		
 		switch($response["returnCode"]){
 			case 0:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: deleteFile() - Server Error] Unable to delete DB file.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: deleteFile() - Server Error] Unable to delete file.", 107);
 				} else {
 					return 0;
 				}
@@ -530,8 +585,8 @@ class Rx{
 	
 	public function createFile($filename){
 		if(!isset($this->URL)){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote] URL not specified.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote] URL not specified.", 400);
 			} else {
 				return 0;  
 			}
@@ -548,8 +603,8 @@ class Rx{
 		$response = $this->sendRequest("PUT", $URL, NULL, $payload);
 			
 		if($response === false){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: createFile()] Unable to connect to StorX Receiver.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: createFile()] Unable to connect to StorX Receiver.", 403);
 			} else {
 				return 0;
 			}
@@ -561,8 +616,8 @@ class Rx{
 		
 		switch($response["returnCode"]){
 			case 0:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: createFile() - Server Error] Unable to create DB file.");
+				if($this->throwExceptions){
+					throw new Exception("[StorX Remote: createFile() - Server Error] Unable to create file.", 106);
 				} else {
 					return 0;
 				}
@@ -570,18 +625,8 @@ class Rx{
 			case 1:
 				return 1;
 				break;
-			case 2:
-			case 3:
-			case 4:
-			case 5:
-				if(THROW_EXCEPTIONS){
-					throw new Exception("[StorX Remote: createFile() - Server Error] Unable to create DB file, file already exists.");
-				} else {
-					return 0;
-				}
-				break;
 			default:
-				if(THROW_EXCEPTIONS){
+				if($this->throwExceptions){
 					doofusError();
 				} else {
 					return 0;
@@ -608,8 +653,8 @@ class Rx{
 		$response = $this->sendRequest("GET", $URL, NULL, $payload);
 			
 		if($response === false){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: checkKey()] Unable to connect to StorX Receiver.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: checkKey()] Unable to connect to StorX Receiver.", 403);
 			} else {
 				return 0;
 			}
@@ -627,7 +672,7 @@ class Rx{
 				return 1;
 				break;
 			default:
-				if(THROW_EXCEPTIONS){
+				if($this->throwExceptions){
 					doofusError();
 				} else {
 					return "STORX_REMOTE_YOU_BROKE_SOMETHING";
@@ -638,8 +683,8 @@ class Rx{
 	
 	public function checkFile($filename){
 		if(!isset($this->URL)){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote] URL not specified.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote] URL not specified.", 400);
 			} else {
 				return 0;  
 			}
@@ -656,8 +701,8 @@ class Rx{
 		$response = $this->sendRequest("GET", $URL, NULL, $payload);
 			
 		if($response === false){
-			if(THROW_EXCEPTIONS){
-				throw new Exception("[StorX Remote: checkFile()] Unable to connect to StorX Receiver.");
+			if($this->throwExceptions){
+				throw new Exception("[StorX Remote: checkFile()] Unable to connect to StorX Receiver.", 403);
 			} else {
 				return 0;
 			}
@@ -684,7 +729,7 @@ class Rx{
 				return 5;
 				break;
 			default:
-				if(THROW_EXCEPTIONS){
+				if($this->throwExceptions){
 					doofusError();
 				} else {
 					return "STORX_REMOTE_YOU_BROKE_SOMETHING";
@@ -692,8 +737,6 @@ class Rx{
 				break;
 		}
 	}
-	
-
 	
 }
 	
