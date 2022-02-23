@@ -28,6 +28,8 @@ class Rx{
 	
 	private $throwExceptions = THROW_EXCEPTIONS;
 	
+	private $curlPemFile = CURL_PEM_FILE;
+	
 	function sendRequest($method = NULL, $URL = NULL, $params = NULL, $payload = NULL){
 		if(empty($method) || empty($URL)){
 			throw new Exception("StorX Remote: URL not specified", 400);
@@ -60,8 +62,8 @@ class Rx{
 			$options[CURLOPT_HTTPHEADER] = $headers;
 		}
 		
-		if(!empty(CURL_PEM_FILE)){
-			$options[CURLOPT_CAINFO] = CURL_PEM_FILE;
+		if(!empty($this->curlPemFile)){
+			$options[CURLOPT_CAINFO] = $this->curlPemFile;
 		}
 		
 		curl_setopt_array($ch, $options);
@@ -144,11 +146,20 @@ class Rx{
 	}
 	
 	public function throwExceptions($throwExceptions = NULL){
-		if($throwExceptions !== NULL){
+		if(!empty($throwExceptions)){
 			$this->throwExceptions = (bool)$throwExceptions;
 		}
 		return $this->throwExceptions;
 	}
+	
+	public function setPemFile($pemFile = NULL){
+		if(!empty($pemFile)){
+			$this->curlPemFile = $pemFile;
+		}
+		return $this->curlPemFile;
+	}
+	
+	
 	
 	public function setURL($URL){
 		$URL = rtrim($URL, '/\\');
