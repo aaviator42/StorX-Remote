@@ -37,7 +37,7 @@ class Rx{
 		
 		
 		if(!empty($params)){
-			rtrim($params, '?');
+			rtrim($URL, '?');
 			$URL .= "?";
 			foreach($params as $key => $value){
 				$URL = $URL . $key . "=" . $value . "&";
